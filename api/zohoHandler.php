@@ -12,12 +12,12 @@ if (authorization('zohoHandler')) {
 
 	if (checkForm($name, $phone, $email)) {
 		if ($idLead = findLead($phone)) {
-			// Lead exists
+			// Лид существует
 			$idAccount = findAccount($phone);
 			$idContact = findContact($phone);
 			convertLeadToDeal($idAccount, $idLead, $idContact);
 		} else {
-			// Lead doesn't exist
+			// Лид не существует в системе
 			createLead($name, $phone, $email, $budget, $source);
 
 			$idContact = findContact($phone);
@@ -40,10 +40,10 @@ if (authorization('zohoHandler')) {
 	), JSON_UNESCAPED_UNICODE);
 }
 
-// Check form for valid required field
+// Проверяем форму на валидность данных
 function checkForm($name, $phone, $email)
 {
-	// Check if field not empty
+	// Проверяем на пустоту в полях формы
 	if ($name && $phone && $email) {
 		return true;
 	} else {
@@ -51,7 +51,7 @@ function checkForm($name, $phone, $email)
 	}
 }
 
-// Check lead for exists
+// Нахождение лида
 function findLead($phone)
 {
 	if ($curl = curl_init()) {
@@ -214,7 +214,6 @@ function convertLeadToDeal($idAccount, $idLead, $idContact)
 				)
 			)
 		); // Переменная данных в json для запроса
-
 		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true); // Получать ли ответ с запроса
 		curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
 		curl_setopt($curl, CURLOPT_POST, true); // Обозначаем, что запрос будет с помощью метода POST
@@ -232,8 +231,6 @@ function convertLeadToDeal($idAccount, $idLead, $idContact)
 				'idLead' => $idLead,
 			), JSON_UNESCAPED_UNICODE);
 		}else{
-			// Запрос пустой (Так не должно быть даже в случае ошибки в теле запроса к API)
-			// Чекай в инспекторе в браузере в Network - выбирай последний снизу файл и вкладку в файле Response
 			// Ошибка конвертации лида в сделку
 			echo json_encode(array(
 				'success' => false,
