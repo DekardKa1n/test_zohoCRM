@@ -54,14 +54,8 @@ function checkForm($name, $phone, $email)
 // Нахождение лида
 function findLead($phone)
 {
-	if ($curl = curl_init()) {
-		curl_setopt($curl, CURLOPT_URL, "https://www.zohoapis.eu/crm/v2/Leads/search?criteria=Phone:equals:$phone");
-		curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-			'Authorization: Zoho-oauthtoken ' . $_COOKIE['access_token']
-		));
-		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($curl, CURLOPT_POST, false);
-		$response = curl_exec($curl);
+		$response = sendRequest("https://www.zohoapis.eu/crm/v2/Leads/search?criteria=Phone:equals:$phone", 'GET', 'findLead');
+
 		$id = str_replace('"', "", json_encode(json_decode($response)->data[0]->id)); // убираем кавычки для последующих запросов
 		curl_close($curl);
 
@@ -76,17 +70,9 @@ function findLead($phone)
 
 function findContact($phone)
 {
-	if ($curl = curl_init()) {
-		curl_setopt($curl, CURLOPT_URL, "https://www.zohoapis.eu/crm/v2/Contacts/search?criteria=Phone:equals:$phone");
-		curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-			'Authorization: Zoho-oauthtoken ' . $_COOKIE['access_token']
-		));
-		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($curl, CURLOPT_POST, false);
-		$response = curl_exec($curl);
+		$response = sendRequest("https://www.zohoapis.eu/crm/v2/Contacts/search?criteria=Phone:equals:$phone", 'GET', 'findContact');
 		$id = str_replace('"', "", json_encode(json_decode($response)->data[0]->id));
 		curl_close($curl);
-
 
 		if ($response) {
 			// Контакт найден
@@ -99,17 +85,10 @@ function findContact($phone)
 
 function findAccount($phone)
 {
-	if ($curl = curl_init()) {
-		curl_setopt($curl, CURLOPT_URL, "https://www.zohoapis.eu/crm/v2/Leads/search?criteria=Phone:equals:$phone");
-		curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-			'Authorization: Zoho-oauthtoken ' . $_COOKIE['access_token']
-		));
-		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($curl, CURLOPT_POST, false);
-		$response = curl_exec($curl);
+		$response = sendRequest("https://www.zohoapis.eu/crm/v2/Leads/search?criteria=Phone:equals:$phone", 'GET', 'findAccount');
+
 		$id = str_replace('"', "", json_encode(json_decode($response)->data[0]->id)); // убираем кавычки для последующих запросов
 		curl_close($curl);
-
 
 		if ($response) {
 			// Аккаунт найден
@@ -122,29 +101,20 @@ function findAccount($phone)
 
 function createLead($name, $phone, $email, $budget, $source)
 {
-	if ($curl = curl_init()) {
-		curl_setopt($curl, CURLOPT_URL, "https://www.zohoapis.eu/crm/v2/Leads");
-		curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-			'Authorization: Zoho-oauthtoken ' . $_COOKIE['access_token']
-		));
-
-		$postData = json_encode(array(
-				'data' => array(
-					array(
-						'Last_Name' => $name,
-						'Phone' => $phone,
-						'Email' => $email,
-						'Annual_Revenue' => $budget,
-						'Lead_Source' => $source,
-					)
+	$postData = json_encode(array(
+			'data' => array(
+				array(
+					'Last_Name' => $name,
+					'Phone' => $phone,
+					'Email' => $email,
+					'Annual_Revenue' => $budget,
+					'Lead_Source' => $source,
 				)
 			)
-		);
-		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($curl, CURLOPT_POST, true);
-		curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
-		$response = json_encode(json_decode(curl_exec($curl)));
-		curl_close($curl);
+		)
+	);
+
+	$response = sendRequest("https://www.zohoapis.eu/crm/v2/Leads", 'POST', 'createLead', $postData);
 
 		$idLead = str_replace('"', "", json_encode(json_decode($response)->data[0]->details->id));
         
@@ -159,11 +129,6 @@ function createLead($name, $phone, $email, $budget, $source)
 
 function createContact($name, $phone, $email, $source)
 {
-	if ($curl = curl_init()) {
-		curl_setopt($curl, CURLOPT_URL, "https://www.zohoapis.eu/crm/v2/Contacts");
-		curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-			'Authorization: Zoho-oauthtoken ' . $_COOKIE['access_token']
-		));
 
 		$postData = json_encode(array(
 				'data' => array(
@@ -176,11 +141,8 @@ function createContact($name, $phone, $email, $source)
 				)
 			)
 		);
-		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
-		curl_setopt($curl, CURLOPT_POST, true);
-		curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
-		$response = json_encode(json_decode(curl_exec($curl)));
-		curl_close($curl);
+
+		$response = sendRequest("https://www.zohoapis.eu/crm/v2/Contacts", 'POST', 'createContact', $postData);
 
 		$id = str_replace('"', "", json_encode(json_decode($response)->data[0]->details->id));
 		// Контакт создан
@@ -244,5 +206,25 @@ function convertLeadToDeal($idAccount, $idLead, $idContact)
 		}
 
 		curl_close($curl); // Закрываем запрос
+	}
+}
+
+// Отправка curl
+function sendRequest($url, $method, $action, $postData = null){
+	if ($curl = curl_init()) {
+		curl_setopt($curl, CURLOPT_URL, $url);
+		curl_setopt($curl, CURLOPT_HTTPHEADER, array(
+			'Authorization: Zoho-oauthtoken ' . $_COOKIE['access_token']
+		));
+
+		curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+		curl_setopt($curl, CURLOPT_POST, $method);
+		if($method == 'POST'){
+			curl_setopt($curl, CURLOPT_POSTFIELDS, $postData);
+		}
+		$response = json_encode(json_decode(curl_exec($curl)));
+		curl_close($curl);
+
+		return $response;
 	}
 }
